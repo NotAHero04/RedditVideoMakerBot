@@ -71,7 +71,7 @@ def get_subreddit_threads(POST_ID: str):
     ):
         submission = reddit.submission(id=settings.config["reddit"]["thread"]["post_id"])
     else:
-        threads = subreddit.new(limit=512)
+        threads = subreddit.new(limit=1536)
         submissionarray = []
         for submission in threads:
             submissionarray.append(submission)
