@@ -69,9 +69,17 @@ def get_subreddit_threads(POST_ID: str):
     ):
         submission = reddit.submission(id=settings.config["reddit"]["thread"]["post_id"])
     else:
-        threads = subreddit.hot(limit=25)
-        submission = get_subreddit_undone(threads, subreddit)
-    submission = check_done(submission)  # double-checking
+        threads = subreddit.new(limit=256)
+        submissionarray = []
+        for submission in threads:
+            submissionarray.append(submission)
+        if len(submissionarray) > 0:
+            x = random.randrange(0, len(submissionarray), 2)
+        submission = submissionarray[x]
+    submission = check_done(submission) # double-checking
+#       threads = subreddit.hot(limit=25)
+#       submission = get_subreddit_undone(threads, subreddit)
+#   submission = check_done(submission)  # double-checking
     if submission is None or not submission.num_comments:
         return get_subreddit_threads(POST_ID)  # submission already done. rerun
     upvotes = submission.score
