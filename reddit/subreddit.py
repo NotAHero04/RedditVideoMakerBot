@@ -1,5 +1,7 @@
 import re
 
+import random
+
 from utils import settings
 import praw
 from praw.models import MoreComments
