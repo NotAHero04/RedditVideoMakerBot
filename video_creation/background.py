@@ -1,6 +1,7 @@
 from pathlib import Path
 import random
 from random import randrange
+import re
 from typing import Any, Tuple
 
 
@@ -10,41 +11,8 @@ from pytube import YouTube
 from pytube.cli import on_progress
 
 from utils import settings
+from utils.CONSTANTS import background_options
 from utils.console import print_step, print_substep
-
-# Supported Background. Can add/remove background video here....
-# <key>-<value> : key -> used as keyword for TOML file. value -> background configuration
-# Format (value):
-# 1. Youtube URI
-# 2. filename
-# 3. Citation (owner of the video)
-# 4. Position of image clips in the background. See moviepy reference for more information. (https://zulko.github.io/moviepy/ref/VideoClip/VideoClip.html#moviepy.video.VideoClip.VideoClip.set_position)
-background_options = {
-    "motor-gta": (  # Motor-GTA Racing
-        "https://www.youtube.com/watch?v=vw5L4xCPy9Q",
-        "bike-parkour-gta.mp4",
-        "Achy Gaming",
-        lambda t: ("center", 480 + t),
-    ),
-    "rocket-league": (  # Rocket League
-        "https://www.youtube.com/watch?v=2X9QGY__0II",
-        "rocket_league.mp4",
-        "Orbital Gameplay",
-        lambda t: ("center", 200 + t),
-    ),
-    "minecraft": (  # Minecraft parkour
-        "https://www.youtube.com/watch?v=n_Dv4JMiwK8",
-        "parkour.mp4",
-        "bbswitzer",
-        "center",
-    ),
-    "gta": (  # GTA Stunt Race
-        "https://www.youtube.com/watch?v=qGa9kWREOnE",
-        "gta-stunt-race.mp4",
-        "Achy Gaming",
-        lambda t: ("center", 480 + t),
-    ),
-}
 
 
 def get_start_and_end_times(video_length: int, length_of_clip: int) -> Tuple[int, int]:
@@ -92,10 +60,10 @@ def download_background(background_config: Tuple[str, str, str, Any]):
     YouTube(uri, on_progress_callback=on_progress).streams.filter(res="1080p").first().download(
         "assets/backgrounds", filename=f"{credit}-{filename}"
     )
-    print_substep("Background videos downloaded successfully! 🎉", style="bold green")
+    print_substep("Background video downloaded successfully! 🎉", style="bold green")
 
 
-def chop_background_video(background_config: Tuple[str, str, str, Any], video_length: int):
+def chop_background_video(background_config: Tuple[str, str, str, Any], video_length: int, reddit_object: dict):
     """Generates the background footage to be used in the video and writes it to assets/temp/background.mp4
 
     Args:
@@ -105,7 +73,7 @@ def chop_background_video(background_config: Tuple[str, str, str, Any], video_le
 
     print_step("Finding a spot in the backgrounds video to chop...✂️")
     choice = f"{background_config[2]}-{background_config[1]}"
-
+    id = re.sub(r"[^\w\s-]", "", reddit_object["thread_id"])
     background = VideoFileClip(f"assets/backgrounds/{choice}")
 
     start_time, end_time = get_start_and_end_times(video_length, background.duration)
@@ -114,12 +82,12 @@ def chop_background_video(background_config: Tuple[str, str, str, Any], video_le
             f"assets/backgrounds/{choice}",
             start_time,
             end_time,
-            targetname="assets/temp/background.mp4",
+            targetname=f"assets/temp/{id}/background.mp4",
         )
     except (OSError, IOError):  # ffmpeg issue see #348
         print_substep("FFMPEG issue. Trying again...")
         with VideoFileClip(f"assets/backgrounds/{choice}") as video:
             new = video.subclip(start_time, end_time)
-            new.write_videofile("assets/temp/background.mp4")
+            new.write_videofile(f"assets/temp/{id}/background.mp4")
     print_substep("Background video chopped successfully!", style="bold green")
     return background_config[2]
